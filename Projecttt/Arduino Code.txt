@@ -1,0 +1,181 @@
+#include <Keypad.h>  //kütüphaneyi ekledik
+#include <LiquidCrystal.h> //kütüphaneyi ekledik
+
+int buzzer_pin = 21; // Buzzer'ı 21 numaralı pine 
+
+int yangin_pin = A1; // Yangın Sensörünü A1 pinine
+
+int sicaklik_pin = A4; // Sıcaklık Sensörünü A4 pinine bağladık.
+
+
+
+const int rs = 14;  
+const int e = 15;
+const int d4 = 16;
+const int d5 = 17;   // liquid crystalin oluşturduğu nesnenin değişkenleri ve hangi pinlere bağlandığı gösterildi.
+const int d6 = 18;
+const int d7 = 19;
+int kirmiziled = 4; //keypad Kırmızı ledi 4 numaralı pine
+int yesilled = 5; // keypad yeşil ledi 5 numaralı pine bağladık
+int hareketlamba = 3;// hareket lambası 3 numaralı pine
+int hareketSensor = 2; // hareket sensörü 2 numaralı pine
+int hareketAlgiyaci = 0; // hareket algılayıcı
+char girilensifre[4]; //kullanının gireceği şifreyi tutacak olan değişkenimiz
+int i = 0; //
+
+float y=0; // lcd ekranın 1 kere çalışmasını sağlaması için oluşturduğumuz değişken
+  
+const byte satir = 4; // satır sayımızı yazdık
+const byte sutun = 3; // sutun sayımızı yazdık
+char TusTakimi[satir][sutun] = {
+  {'1', '2', '3'},
+  {'4', '5', '6'},
+  {'7', '8', '9'},
+  {'*', '0', '#'}
+};
+// üst kısımda tuş takımı isimli 2 boyutlu dizi tanımladık.
+//Tuşlarımızdaki karakterleri buraya yazdık.
+//Tuşlarımızda tek karakter olduğundan dolayı char olarak tanımladık.
+char tus;
+byte satir_pinleri[satir] = {9, 8, 7, 6}; //keypad satırları bağladığımız pinler
+byte sutun_pinleri[satir] = {12, 11, 10}; //keypad sutunları bagladığımız pinler
+Keypad input = Keypad(makeKeymap(TusTakimi), satir_pinleri, sutun_pinleri, satir, sutun);
+//Tus takimi isminde bir nesne oluşturduk ve özelliklerini belirttik.
+//yani kaç satır kaç sutundan oluşan ve içerikleri neler, bu bilgileri verdik.
+LiquidCrystal ekran(rs, e, d4, d5, d6, d7); // liquid crystalin oluşturduğu nesne
+
+void setup() {
+  pinMode(yangin_pin, INPUT_PULLUP); // yangın sensörü pin ataması
+  pinMode(buzzer_pin, OUTPUT);      // buzzer pin ataması
+  pinMode(hareketlamba, OUTPUT);  // sensör lamba pin ataması
+  pinMode(hareketSensor, INPUT);  // sensör pin ataması
+  pinMode(kirmiziled, OUTPUT);    // kirmizi pin ataması
+  pinMode(yesilled, OUTPUT);      // yesil pin ataması
+  digitalWrite(kirmiziled, 0);
+  digitalWrite(yesilled, 0);
+
+
+  analogReference(INTERNAL1V1); // Analog pinlerin girişinde kullanılan referans gerilimini ayarladık.
+
+  ekran.begin(16, 2); // LCD ekranın boyutlarını belirledik(16 sütun 2 satır).
+
+  ekran.setCursor(0, 0); // imleci ekranın 0.sütun 0.satırına aldık.
+  ekran.print("AKILLI"); // LCD ekrana "AKILLI" yazdırıldı.
+
+  delay(250);  // 250 milisaniye bekletme
+  ekran.clear(); // LCD ekrandaki tüm yazıları siler.
+
+  ekran.setCursor(0, 0); // imleci ekranın 0.sütun 0.satırına aldık.
+  ekran.print("EV");   // LCD ekrana "EV" yazdırıldı.
+
+  delay(250);   // 250 milisaniye bekletme
+  ekran.clear(); // LCD ekrandaki tüm yazıları siler.
+
+  ekran.setCursor(0, 0); // imleci ekranın 0.sütun 0.satırına aldık.
+  ekran.print("SISTEMLERI"); // LCD ekrana "SISTEMLERI" yazdırıldı.
+
+  delay(250);   //  250 milisaniye bekletme
+  ekran.clear();  //  LCD ekrandaki tüm yazıları siler.
+
+
+
+}
+
+void loop() {
+  tus = input.getKey(); //herhangi bir tuşa basıldığında tus isimli değişken bunu hafızaya alacak.
+  if (tus)    //herhangi bir tuşa basıldığında
+  {
+    girilensifre[i++] = tus;
+    delay(50);
+
+  }
+  if (i == 4)
+  {
+    char sifremiz[4] = {'1', '2', '3', '4'}; //sifremizi oluşturduk
+    if ((strncmp(girilensifre, sifremiz, 4) == 0))   // iki değişken içindeki değerlerin aynı olup olmadığını karşılaştırıyor. Aynı ise 0 değeri geliyor.
+    {
+      digitalWrite(kirmiziled, 0);
+      digitalWrite(yesilled, 1);  //şifre doğru girildiyse yeşil led yansın.
+      delay(500);
+      digitalWrite(kirmiziled, 0);
+      digitalWrite(yesilled, 0);
+      i = 0; //i değerini 0'a eşitlemezsek, sadece bir kez şifre girmeye müsade eder. çünkü i==4 bir daha gerçekleşmez.
+    }
+
+    else
+    {
+      digitalWrite(kirmiziled, 1);
+      digitalWrite(yesilled, 0);    //şifre yanlış girildiyse kırmızı led yansın.
+      delay(500);
+      digitalWrite(kirmiziled, 0);
+      digitalWrite(yesilled, 0);
+      i = 0; //i değerini 0'a eşitlemezsek, sadece bir kez şifre girmeye müsade eder. çünkü i==4 bir daha gerçekleşmez.
+    }
+  }
+
+
+  hareketAlgiyaci = digitalRead(hareketSensor);
+  if (hareketAlgiyaci == HIGH)
+  {
+    digitalWrite(hareketlamba , HIGH); // hareket algınırsa ledi yak
+  }
+  else
+  {
+    digitalWrite(hareketlamba , LOW); // hareket algılanmazsa ledi sondur
+  }
+
+  
+  float x = analogRead(sicaklik_pin); // sıcaklık sensöründeki değeri oku 
+
+  x = x * 1100 / (1024 * 10);  // sıcaklık sensöründe okunan değeri Santigrat cinsinden değere dönüştürür.
+
+if(y!=x) // LCD ekranında sıcaklığı 1 kez yazdırmak için 
+{
+  ekran.print("TEMPERATURE IS:");
+  ekran.setCursor(0, 1);  // imleci ekranın 0.sütun 1.satırına aldık(alt satıra geçtik).
+  ekran.print(x);   // sıcaklık değerini lcd ekrana yazdırır.
+  delay(150);  // bekleme kısmı
+  ekran.clear();  //  LCD ekrandaki tüm yazıları siler.
+  ekran.setCursor(0, 0);  // imleci ekranın 0.sütun 1.satırına aldık(alt satıra geçtik).
+
+  if (x < 20) { // sıcaklık değeri 20'nin altında ise
+
+    ekran.print("Sicaklik dustu");  // LCD ekrana "Sicaklik dustu" yazdırıldı.
+    delay(150);   // bekleme kısmı
+    ekran.clear();  //   LCD ekrandaki tüm yazıları siler.
+  }
+
+  if (x > 30)  // sıcaklık değeri 30'un üstünde ise
+
+  {
+
+    ekran.print("Sicaklik");   // LCD ekrana "Sicaklik" yazdırıldı.
+    delay(150);  // bekleme kısmı
+    ekran.clear();//   LCD ekrandaki tüm yazıları siler.
+    ekran.setCursor(0,0);
+    ekran.print("Yukseldi");//LCD ekrana "yukseldi" yazdırıldı.
+    delay(150);
+    ekran.clear();
+
+  }
+}
+y=x;  //  LCD ekranında sıcaklığı 1 kez yazdırmak için  y'ye x değeri verildi
+ 
+
+  int value = digitalRead(yangin_pin);   // yangın sensöründeki değeri oku 
+
+
+  if (value == HIGH) {  // okunan değer "HIGH" ise
+
+    digitalWrite(buzzer_pin, HIGH);  // BUZZER'ın ötmesini sağlar
+
+    delay(200);  // bekleme kısmı
+  }
+  else {  // okunan değer "HIGH" değil ise 
+
+    digitalWrite(buzzer_pin, LOW);   // BUZZER ötmez.
+
+  }
+
+
+}
